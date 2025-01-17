@@ -43,6 +43,6 @@ python pdf_splitter.py test/input.pdf output/ --ranges "1-5,6-10,11-15" --overwr
 
 ### License
 
-Copyright 2025
+Copyright 2025 Max Base
 
 License MIT
