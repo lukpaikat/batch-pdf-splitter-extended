@@ -1,0 +1,4 @@
+Splitting test/input.pdf into smaller files:
+Created output/split_1_1_5.pdf
+Created output/split_2_6_10.pdf
+Created output/split_3_11_15.pdf
