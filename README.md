@@ -1,6 +1,6 @@
 # batch-pdf-splitter
 
-Create a tool that splits large PDF files into smaller parts by page range. (python)
+`batch-pdf-splitter` is a Python tool designed to efficiently split large PDF files into smaller, more manageable parts based on specified page ranges. Ideal for users who need to process and manage extensive PDF documents, this tool allows for precise control over the division of content, making it easy to extract specific sections, chapters, or pages from a larger PDF file. Whether you're working with books, reports, or academic papers, `batch-pdf-splitter` streamlines the process of breaking down PDFs for easier sharing, editing, or analysis.
 
 ## Installation
 
