@@ -10,10 +10,32 @@ def create_output_dir(output_dir):
         os.makedirs(output_dir)
 
 
-def parse_page_ranges(range_str):
-    """Parse groups of page ranges. Semicolons separate files, commas combine pages."""
-    file_groups = []
+def parse_page_ranges(range_str, total_pages=None):
+    """
+    Parse groups of page ranges. 
+    Supports 'per:N' to split every N pages.
+    Otherwise, semicolons separate files, commas combine pages.
+    """
+    range_str_lower = range_str.strip().lower()
     
+    if range_str_lower.startswith('per:'):
+        if total_pages is None:
+            raise ValueError("total_pages is required for the 'per:N' format.")
+        try:
+            chunk_size = int(range_str_lower.split(':')[1])
+            if chunk_size <= 0:
+                raise ValueError
+            
+            file_groups = []
+            for i in range(0, total_pages, chunk_size):
+                end = min(i + chunk_size, total_pages)
+                file_groups.append([(i, end)])
+            return file_groups
+        except (ValueError, IndexError):
+            print(f"Invalid range format: {range_str}. Use 'per:N' where N is a number.")
+            return []
+
+    file_groups = []
     for group_str in range_str.split(';'):
         page_ranges = []
         for range_item in group_str.split(','):
@@ -59,7 +81,6 @@ def write_log(log, message):
 
 def generate_output_filename(output_dir, idx, base_filename, split_name=None, output_filename=None):
     """Generate the output PDF filename based on the provided names or defaults."""
-    
     name_val = split_name if split_name else f"part_{idx + 1}"
     
     if output_filename:
@@ -74,7 +95,7 @@ def generate_output_filename(output_dir, idx, base_filename, split_name=None, ou
     return os.path.join(output_dir, f"{base_filename}_part_{idx + 1}.pdf")
 
 
-def split_pdf(input_pdf_path, output_dir, page_ranges, split_names=None, overwrite=False, output_filename=None, log_file=None):
+def split_pdf(input_pdf_path, output_dir, range_str, split_names=None, overwrite=False, output_filename=None, log_file=None):
     """Splits a PDF into smaller PDFs based on ranges and assigns custom names."""
     try:
         base_filename = os.path.splitext(os.path.basename(input_pdf_path))[0]
@@ -84,7 +105,13 @@ def split_pdf(input_pdf_path, output_dir, page_ranges, split_names=None, overwri
             total_pages = len(pdf_reader.pages)
 
             log = open(log_file, 'a') if log_file else None
-            write_log(log, f"Splitting {input_pdf_path} into smaller files:")
+            write_log(log, f"Splitting {input_pdf_path} (Total pages: {total_pages}) into smaller files:")
+
+            page_ranges = parse_page_ranges(range_str, total_pages)
+            
+            if not page_ranges:
+                write_log(log, "No valid page ranges to execute. Skipping this file.")
+                return
 
             for idx, file_group in tqdm(enumerate(page_ranges), desc="Processing Files", total=len(page_ranges)):
                 pdf_writer = PyPDF2.PdfWriter()
@@ -102,7 +129,6 @@ def split_pdf(input_pdf_path, output_dir, page_ranges, split_names=None, overwri
                 if not pages_added:
                     continue
 
-                # Get the custom name for this specific file, if provided
                 current_split_name = None
                 if split_names and idx < len(split_names):
                     current_split_name = split_names[idx]
@@ -131,16 +157,16 @@ def split_pdf(input_pdf_path, output_dir, page_ranges, split_names=None, overwri
 
 def parse_args():
     """Parse command-line arguments."""
-    parser = argparse.ArgumentParser(description="Split PDF files into smaller parts by page range.")
+    parser = argparse.ArgumentParser(description="Split PDF files into smaller parts by page range or chunk size.")
     
     parser.add_argument('input_pdfs', nargs='+', help="Path to one or more input PDF files to split.")
     parser.add_argument('output_dir', help="Directory to save the split PDF files.")
     
-    parser.add_argument('--ranges', type=str, required=True, help="Semicolon-separated file groups, comma-separated pages. E.g. '1-2,4-5; 3'")
+    parser.add_argument('--ranges', type=str, required=True, help="Page ranges (e.g., '1-2,4-5; 3') OR number of pages per chunk (e.g., 'per:2' to split every 2 pages)")
 
-    parser.add_argument('--names', type=str, default=None, help="Semicolon-separated names for each split. E.g. 'suket kesehatan jasmani; suket narkoba'")
+    parser.add_argument('--names', type=str, default=None, help="Semicolon-separated names for each split. E.g., 'health certificate; drug test'")
     
-    parser.add_argument('--output_filename', type=str, default=None, help="Custom format penamaan. Gunakan {base} untuk nama file asli, {name} untuk split names, {idx} untuk urutan angka. Contoh: '{name}_{base}.pdf'")
+    parser.add_argument('--output_filename', type=str, default=None, help="Custom naming format. Use {base} for original filename, {name} for split names, {idx} for number sequence. Example: '{name}_{base}.pdf'")
     parser.add_argument('--overwrite', action='store_true', help="Overwrite existing files.")
     parser.add_argument('--log_file', type=str, default=None, help="Log file to record created PDFs.")
     
@@ -152,12 +178,11 @@ def main():
     args = parse_args()
 
     create_output_dir(args.output_dir)
-    page_ranges = parse_page_ranges(args.ranges)
     split_names = parse_split_names(args.names)
 
     for input_pdf in args.input_pdfs:
         print(f"\n--- Processing: {input_pdf} ---")
-        split_pdf(input_pdf, args.output_dir, page_ranges, split_names, args.overwrite, args.output_filename, args.log_file)
+        split_pdf(input_pdf, args.output_dir, args.ranges, split_names, args.overwrite, args.output_filename, args.log_file)
 
 
 if __name__ == "__main__":
