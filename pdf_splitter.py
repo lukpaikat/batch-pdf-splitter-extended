@@ -59,21 +59,24 @@ def write_log(log, message):
 
 def generate_output_filename(output_dir, idx, base_filename, split_name=None, output_filename=None):
     """Generate the output PDF filename based on the provided names or defaults."""
-    if split_name:
-        # If the user provided a specific name for this split (e.g., "suket narkoba")
-        return os.path.join(output_dir, f"{base_filename}_{split_name}.pdf")
-    elif output_filename:
-        # Fallback to standard custom format if provided
-        return os.path.join(output_dir, output_filename.format(idx + 1))
     
-    # Default behavior if no names are provided
+    name_val = split_name if split_name else f"part_{idx + 1}"
+    
+    if output_filename:
+        formatted_name = output_filename.format(base=base_filename, name=name_val, idx=idx + 1)
+        if not formatted_name.lower().endswith('.pdf'):
+            formatted_name += '.pdf'
+        return os.path.join(output_dir, formatted_name)
+    
+    if split_name:
+        return os.path.join(output_dir, f"{base_filename}_{split_name}.pdf")
+    
     return os.path.join(output_dir, f"{base_filename}_part_{idx + 1}.pdf")
 
 
 def split_pdf(input_pdf_path, output_dir, page_ranges, split_names=None, overwrite=False, output_filename=None, log_file=None):
     """Splits a PDF into smaller PDFs based on ranges and assigns custom names."""
     try:
-        # Extract the original filename without the '.pdf' extension
         base_filename = os.path.splitext(os.path.basename(input_pdf_path))[0]
         
         with open(input_pdf_path, 'rb') as input_pdf:
@@ -134,11 +137,10 @@ def parse_args():
     parser.add_argument('output_dir', help="Directory to save the split PDF files.")
     
     parser.add_argument('--ranges', type=str, required=True, help="Semicolon-separated file groups, comma-separated pages. E.g. '1-2,4-5; 3'")
-    
-    # NEW ARGUMENT: Custom names for the splits
+
     parser.add_argument('--names', type=str, default=None, help="Semicolon-separated names for each split. E.g. 'suket kesehatan jasmani; suket narkoba'")
     
-    parser.add_argument('--output_filename', type=str, default=None, help="Fallback output filename format, e.g. 'part_{0}.pdf'.")
+    parser.add_argument('--output_filename', type=str, default=None, help="Custom format penamaan. Gunakan {base} untuk nama file asli, {name} untuk split names, {idx} untuk urutan angka. Contoh: '{name}_{base}.pdf'")
     parser.add_argument('--overwrite', action='store_true', help="Overwrite existing files.")
     parser.add_argument('--log_file', type=str, default=None, help="Log file to record created PDFs.")
     
