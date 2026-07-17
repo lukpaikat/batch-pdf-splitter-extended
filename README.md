@@ -30,21 +30,29 @@ Split a single PDF into multiple output files based on page ranges:
 python pdf_splitter.py test/input.pdf output/ --ranges "1-5,6-10,11-15" --overwrite --log_file "output/split_log.txt"
 ```
 
-### Advanced example
+### Advanced Examples
 
-Process multiple PDFs and create separate files with custom names and dynamic output formatting:
+**1. Custom Naming Format:**
+Process multiple PDFs and reverse the naming format to `[split_name]_[original_filename].pdf`:
 
 ```bash
-python pdf_splitter.py input1.pdf input2.pdf output/ --ranges "1-3,5-6; 7-9" --names "chapter-one; chapter-two" --output_filename "part_{0}.pdf" --overwrite --log_file "output/split_log.txt"
+python pdf_splitter.py input1.pdf input2.pdf output/ --ranges "1-3,5-6; 7-9" --names "chapter-one; chapter-two" --output_filename "{name}_{base}.pdf" --overwrite --log_file "output/split_log.txt"
+```
+
+**2. Split Every Page (1-Page per File) from a Folder:**
+Scan a directory for all PDFs and split every single page into separate files, dynamically numbered:
+
+```bash
+python pdf_splitter.py ./my_pdf_folder/ output/ --ranges "all" --output_filename "{base}_page_{idx}.pdf"
 ```
 
 ### Arguments
 
-- `input_pdfs`: One or more input PDF files to split.
+- `input_pdfs`: One or more input PDF files OR folders containing PDFs.
 - `output_dir`: Directory where the split PDF files will be saved.
-- `--ranges`: Semicolon-separated file groups and comma-separated page ranges. Example: `"1-3,5-6; 7-9"`.
+- `--ranges`: Semicolon-separated file groups and comma-separated page ranges (e.g., "1-3,5-6; 7-9"). Use "all" to automatically split every page into a separate file.
 - `--names`: Semicolon-separated custom names for each generated output file.
-- `--output_filename`: Optional filename format string, such as `part_{0}.pdf`.
+- `--output_filename`: Custom format for the output filename. Supports placeholders: {base} (original filename), {name} (from --names), and {idx} (sequence number). Example: "{name}_{base}.pdf".
 - `--overwrite`: Overwrite existing output files.
 - `--log_file`: Path to a file where split activity will be recorded.
 
